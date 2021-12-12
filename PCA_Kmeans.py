@@ -36,7 +36,7 @@ def get_descriptors (image1, image2, window_size, pca_dim_gray, pca_dim_rgb):
     descriptors = []
     for i in range(window_size):
         for j in range(window_size):
-            descriptors += [diff_image[i:i+image1.shape[0],j:j+image1.shape[1],:]]
+            descriptors += [diff_image[i:i+image1.shape[0],j:j+image1.shape[1],:].reshape((image1.shape[0],image1.shape[1],3))]
     descriptors = np.concatenate(descriptors, axis = 2)
     descriptors_rgb_diff = descriptors.reshape((descriptors.shape[0] * descriptors.shape[1], descriptors.shape[2]))
 
