@@ -32,7 +32,10 @@ def get_descriptors (image1, image2, window_size, pca_dim_gray, pca_dim_rgb):
     
     if (global_variables.save_extra_stuff):
         imsave(global_variables.output_dir + '/final_diff.jpg', diff_image)
-        
+    
+    diff_image = np.np.pad(diff_image,((window_size // 2, window_size // 2), (window_size // 2, window_size // 2),(0,0)),
+            'constant')
+    
     descriptors = []
     for i in range(window_size):
         for j in range(window_size):
