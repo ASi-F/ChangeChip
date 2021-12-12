@@ -14,45 +14,30 @@ def get_descriptors (image1, image2, window_size, pca_dim_gray, pca_dim_rgb):
 
     #################################################   grayscale-diff (abs)
 
-    descriptors = np.zeros((image1.shape[0],image1.shape[1], window_size * window_size))
     diff_image = cv2.absdiff(image1, image2)
     diff_image = color.rgb2gray(diff_image)
     imsave(global_variables.output_dir  + '/diff.jpg', diff_image)
     diff_image = np.pad(diff_image,((window_size // 2, window_size // 2), (window_size // 2, window_size // 2)),
             'constant')  # default is 0
-    for i in range(image1.shape[0]):
-        for j in range(image1.shape[1]):
-            descriptors[i,j,:] =diff_image[i:i+window_size,j:j+window_size].ravel()
+    descriptors = []
+    for i in range(window_size):
+        for j in range(window_size):
+            descriptors += [diff_image[i:i+image1.shape[0],j:j+image1.shape[1]].reshape((image1.shape[0],image1.shape[1],1))]
+    descriptors = np.concatenate(descriptors, axis = 2)
     descriptors_gray_diff = descriptors.reshape((descriptors.shape[0] * descriptors.shape[1], descriptors.shape[2]))
 
     #################################################   3-channels-diff (abs)
-
-    descriptors = np.zeros((image1.shape[0], image1.shape[1], window_size * window_size*3))
-    diff_image_r = cv2.absdiff(image1[:, :, 0],image2[:, :, 0])
-    diff_image_g = cv2.absdiff(image1[:, :, 1],image2[:, :, 1])
-    diff_image_b = cv2.absdiff(image1[:, :, 2],image2[:, :, 2])
-
+    
+    diff_image = cv2.absdiff(image1, image2)
+    
     if (global_variables.save_extra_stuff):
-        imsave(global_variables.output_dir + '/final_diff.jpg', cv2.absdiff(image1, image2))
-        imsave(global_variables.output_dir +'/final_diff_r.jpg', diff_image_r)
-        imsave(global_variables.output_dir + '/final_diff_g.jpg', diff_image_g)
-        imsave(global_variables.output_dir + '/final_diff_b.jpg', diff_image_b)
-
-    diff_image_r = np.pad(diff_image_r, ((window_size // 2, window_size // 2), (window_size // 2, window_size // 2)),
-                        'constant')  # default is 0
-    diff_image_g = np.pad(diff_image_g,
-                            ((window_size // 2, window_size // 2), (window_size // 2, window_size // 2)),
-                            'constant')  # default is 0
-    diff_image_b = np.pad(diff_image_b,
-                            ((window_size // 2, window_size // 2), (window_size // 2, window_size // 2)),
-                            'constant')  # default is 0
-
-    for i in range(image1.shape[0]):
-        for j in range(image1.shape[1]):
-            feature_r = diff_image_r[i:i + window_size, j:j + window_size].ravel()
-            feature_g = diff_image_g[i:i + window_size, j:j + window_size].ravel()
-            feature_b = diff_image_b[i:i + window_size, j:j + window_size].ravel()
-            descriptors[i, j, :] = np.concatenate((feature_r, feature_g, feature_b))
+        imsave(global_variables.output_dir + '/final_diff.jpg', diff_image)
+        
+    descriptors = []
+    for i in range(window_size):
+        for j in range(window_size):
+            descriptors += [diff_image[i:i+image1.shape[0],j:j+image1.shape[1],:].reshape((image1.shape[0],image1.shape[1]))]
+    descriptors = np.concatenate(descriptors, axis = 2)
     descriptors_rgb_diff = descriptors.reshape((descriptors.shape[0] * descriptors.shape[1], descriptors.shape[2]))
 
     #################################################   concatination
