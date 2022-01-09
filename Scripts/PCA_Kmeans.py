@@ -1,6 +1,6 @@
 import numpy as np
 from numpy import savetxt
-from scipy.misc import imread, imsave, imresize
+# from scipy.misc import imread, imsave, imresize
 from sklearn.cluster import KMeans
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import PCA
@@ -16,7 +16,7 @@ def get_descriptors (image1, image2, window_size, pca_dim_gray, pca_dim_rgb):
 
     diff_image = cv2.absdiff(image1, image2)
     diff_image = color.rgb2gray(diff_image)
-    imsave(global_variables.output_dir  + '/diff.jpg', diff_image)
+    cv2.imwrite(global_variables.output_dir  + '/diff.jpg', diff_image)
     diff_image = np.pad(diff_image,((window_size // 2, window_size // 2), (window_size // 2, window_size // 2)),
             'constant')  # default is 0
     descriptors = []
@@ -31,7 +31,7 @@ def get_descriptors (image1, image2, window_size, pca_dim_gray, pca_dim_rgb):
     diff_image = cv2.absdiff(image1, image2)
     
     if (global_variables.save_extra_stuff):
-        imsave(global_variables.output_dir + '/final_diff.jpg', diff_image)
+        cv2.imwrite(global_variables.output_dir + '/final_diff.jpg', diff_image)
     
     diff_image = np.pad(diff_image,((window_size // 2, window_size // 2), (window_size // 2, window_size // 2),(0,0)),
             'constant')
@@ -101,9 +101,9 @@ def compute_change_map(image1, image2, window_size=5, clusters=16, pca_dim_gray=
             palette_colored_change_map[i, j] = [255*palette[change_map[i, j]][0],255*palette[change_map[i, j]][1],255*palette[change_map[i, j]][2]]
 
     if (global_variables.save_extra_stuff):
-        imsave(global_variables.output_dir+ '/window_size_'+str(window_size)+'_pca_dim_gray'+str(pca_dim_gray)+'_pca_dim_rgb'
+        cv2.imwrite(global_variables.output_dir+ '/window_size_'+str(window_size)+'_pca_dim_gray'+str(pca_dim_gray)+'_pca_dim_rgb'
                +str(pca_dim_rgb)+'_clusters_'+  str(clusters) + '.jpg', colored_change_map)
-        imsave(global_variables.output_dir + '/PALETTE_window_size_' + str(window_size) + '_pca_dim_gray' + str(pca_dim_gray) + '_pca_dim_rgb'
+        cv2.imwrite(global_variables.output_dir + '/PALETTE_window_size_' + str(window_size) + '_pca_dim_gray' + str(pca_dim_gray) + '_pca_dim_rgb'
                + str(pca_dim_rgb) + '_clusters_' + str(clusters) + '.jpg', palette_colored_change_map)
 
     #Saving Output for later evaluation

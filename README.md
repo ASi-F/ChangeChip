@@ -29,13 +29,12 @@ conda install numpy scipy matplotlib
 conda install opencv pillow scikit-learn scikit-image
 conda install keras tensorflow
 conda install seaborn
-conda install scipy==1.1.0
 ```
 
 ## Running:
 - Run the following command under the conda environment with your spesific directory and images paths, and change the values of the system parameters, if needed.
 ```
-python main.py -output_dir Example/OUTPUT_DIR 
+python Scripts/main.py -output_dir Example/Output 
 -input_path Example/INPUT_IMAGE.JPG 
 -reference_path Example/REFERENCE_IMAGE.JPG 
 -n 16 
