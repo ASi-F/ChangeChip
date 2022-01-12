@@ -8,6 +8,7 @@ from PCA_Kmeans import compute_change_map, find_group_of_accepted_classes_DBSCAN
 import global_variables
 import os
 import argparse
+import bounding_box
 
 def main(output_dir,input_path,reference_path,n,window_size, pca_dim_gray, pca_dim_rgb,
          cut, lighting_fix, use_homography, resize_factor, save_extra_stuff):
@@ -103,6 +104,13 @@ def main(output_dir,input_path,reference_path,n,window_size, pca_dim_gray, pca_d
     alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * 255
     alpha_channel[:, :] = 50
     groups = find_group_of_accepted_classes_DBSCAN(mse_array)
+    
+    bounding_boxes = bounding_box.bboxes(clustering_map,groups[0],0)
+    img = input_image.copy()
+    for box in bounding_boxes:
+        img = cv2.rectangle(img, (max(box[0]-2,0),max(box[1]-2,0)), (min(box[2]+2,img.shape[1]-1),min(box[3]+2,img.shape[0]+2)), (0,0,255),2)
+    cv2.imwrite(global_variables.output_dir + '/MARKED_DEFECTS'+'.png', img)
+
     for group in groups:
         transparent_input_image = cv2.merge((b_channel, g_channel, r_channel, alpha_channel))
         result = draw_combination_on_transparent_input_image(mse_array, clustering, group, transparent_input_image)
