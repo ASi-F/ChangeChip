@@ -2,16 +2,20 @@ import numpy as np
 import itertools
 
 def max_coords(i,j,clusters,classes):
-  if i == clusters.shape[0]-1:
-    if j == clusters.shape[1]-1:
+  if i >= clusters.shape[0]-1:
+    if j >= clusters.shape[1]-1:
       return i,j
   
-  if i == clusters.shape[0]-1:
+  if i >= clusters.shape[0]-1:
     if clusters[i][j+1] not in classes:
+      return i,j
+    else:
       return max_coords(i,j+1,clusters,classes)
   
-  if j == clusters.shape[1]-1:
+  if j >= clusters.shape[1]-1:
     if clusters[i+1][j] not in classes:
+      return i,j
+    else:
       return max_coords(i+1,j,clusters,classes)
 
   if clusters[i+1][j] not in classes:
