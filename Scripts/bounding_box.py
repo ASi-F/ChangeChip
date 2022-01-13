@@ -1,4 +1,5 @@
 import numpy as np
+import itertools
 
 def max_coords(i,j,clusters,classes):
   if i == clusters.shape[0]-1:
@@ -36,10 +37,10 @@ def intersection(box1,box2):
 
 def union(boxes, intersection_set):
 
-  xmin = min([box[0] for box in boxes])
-  xmax = max([box[2] for box in boxes])
-  ymin = min([box[1] for box in boxes])
-  ymax = max([box[3] for box in boxes])
+  xmin = min([boxes[i][0] for i in intersection_set])
+  xmax = max([boxes[i][2] for i in intersection_set])
+  ymin = min([boxes[i][1] for i in intersection_set])
+  ymax = max([boxes[i][3] for i in intersection_set])
   return [xmin,ymin,xmax,ymax]
 
 def reduce(boxes):
@@ -56,7 +57,7 @@ def reduce(boxes):
             break
         if not flag:
           intersection_sets += [[i,j]]
-  all_intersections = list(np.array(intersection_sets).reshape(-1))
+  all_intersections = list(set(itertools.chain.from_iterable(intersection_sets))) 
   new = [boxes[i] for i in range(len(boxes)) if i not in all_intersections]
   for i in range(len(intersection_sets)):
     new += [union(boxes,intersection_sets[i])]
