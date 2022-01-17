@@ -1,40 +1,15 @@
 import numpy as np
 import itertools
 
-def max_coords(i,j,clusters,classes):
-  if i >= clusters.shape[0]-1:
-    if j >= clusters.shape[1]-1:
-      return i,j
-  
-  if i >= clusters.shape[0]-1:
-    if clusters[i][j+1] not in classes:
-      return i,j
-    else:
-      return max_coords(i,j+1,clusters,classes)
-  
-  if j >= clusters.shape[1]-1:
-    if clusters[i+1][j] not in classes:
-      return i,j
-    else:
-      return max_coords(i+1,j,clusters,classes)
-
-  if clusters[i+1][j] not in classes:
-    if clusters[i+1][j+1] not in classes:
-      if clusters[i][j+1] not in classes:
-        return i,j
-  
-  y1,x1= max_coords(i+1,j+1,clusters,classes)
-  y2,x2 = max_coords(i+1,j+1,clusters,classes)
-  y3,x3 = max_coords(i,j+1,clusters,classes)
-
-  return max(y1,y2,y3),max(x1,x2,x3)
+def around(i,j,i1,j1):
+  return (i-i1)*(i-i1)+(j-j1)*(j-j1) <= 2
 
 def intersection(box1,box2):
   xmin = max(box1[0],box2[0])
   xmax = min(box1[2],box2[2])
   ymin = max(box1[1],box2[1])
   ymax = min(box1[3],box2[3])
-  if xmin<=xmax and ymin<=ymax:
+  if xmax<=xmin or ymax<=ymin:
     return True
   else:
     return False
@@ -67,22 +42,46 @@ def reduce(boxes):
     new += [union(boxes,intersection_sets[i])]
   return new
 
-def bboxes(clusters, classes, thresh):
-  masks = clusters.copy()
-  boxes = []
-  for i in range(clusters.shape[0]):
-    for j in range(clusters.shape[1]):
-      if masks[i][j] != -1:
-        if clusters[i][j] in classes :
-          ymin = i
-          xmin = j
-          ymax, xmax = max_coords(i,j,clusters,classes)
-          if (xmax-xmin)*(ymax-ymin) >= thresh:
-            boxes.append([xmin,ymin,xmax,ymax])
-          for a0 in range(xmin,xmax+1):
-            for b0 in range(ymin,ymax+1):
-              masks[b0][a0] = -1
+def create_clusters(clusters, classes):
+  x = clusters.copy()
+  disjoint_sets = []
+  binary_clusters = np.zeros_like(x)
+  for i in range(x.shape[0]):
+    for j in range(x.shape[1]):
+      binary_clusters[i][j] = int(x[i][j] in classes)
+  
+  for i in range(binary_clusters.shape[0]):
+    for j in range(binary_clusters.shape[1]):
+      if binary_clusters[i][j] == 1:
+        intersection_set = []
+        for a0 in range(len(disjoint_sets)):
+          disjoint_set = disjoint_sets[a0]
+          for point in disjoint_set:
+            if around(point[0],point[1],i,j):
+              intersection_set += [a0]
+              break
+        if len(intersection_set)==0:
+          disjoint_sets += [[[i,j]]]
+        elif len(intersection_set)==1:
+          disjoint_sets[intersection_set[0]] += [[i,j]]
         else:
-          masks[i][j] = -1
-
-  return reduce(boxes)
+          new_set = []
+          for a0 in intersection_set:
+            new_set += disjoint_sets[a0]
+          disjoint_sets = [disjoint_sets[k] for k in range(len(disjoint_sets)) if k not in intersection_set]
+          disjoint_sets.append(new_set)
+  bboxes = []
+  for i in range(len(disjoint_sets)):
+    xmin, xmax, ymin, ymax = 10**6,0,10**6,0
+    for point in disjoint_sets[i]:
+      y, x = point[0], point[1]
+      if x<xmin:
+        xmin = x
+      if x>xmax:
+        xmax = x
+      if y<ymin:
+        ymin = y
+      if y>ymax:
+        ymax = y
+    bboxes += [[xmin, ymin, xmax, ymax]]
+  return reduce(bboxes)

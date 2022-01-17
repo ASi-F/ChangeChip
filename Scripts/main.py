@@ -105,7 +105,7 @@ def main(output_dir,input_path,reference_path,n,window_size, pca_dim_gray, pca_d
     alpha_channel[:, :] = 50
     groups = find_group_of_accepted_classes_DBSCAN(mse_array)
     
-    bounding_boxes = bounding_box.bboxes(clustering_map,groups[0],0)
+    bounding_boxes = bounding_box.create_clusters(clustering_map,groups[0])
     img = input_image.copy()
     for box in bounding_boxes:
         img = cv2.rectangle(img, (max(box[0]-2,0),max(box[1]-2,0)), (min(box[2]+2,img.shape[1]-1),min(box[3]+2,img.shape[0]+2)), (0,0,255),2)
