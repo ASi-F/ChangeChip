@@ -10,9 +10,9 @@ import cv2
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def get_descriptors (image1, image2, window_size, pca_dim_rgb):
+def get_descriptors (image1, image2, window_size, pca_dim_rgb, pca_dim_hsv):
 
-    #################################################   3-channels-diff (abs)
+    #################################################   3-channels-diff (rgb)
     
     diff_image = cv2.absdiff(image1, image2)
     
@@ -29,9 +29,28 @@ def get_descriptors (image1, image2, window_size, pca_dim_rgb):
     descriptors = np.concatenate(descriptors, axis = 2)
     descriptors_rgb_diff = descriptors.reshape((descriptors.shape[0] * descriptors.shape[1], descriptors.shape[2]))
 
-    descriptors_colored_diff = descriptors_to_pca(descriptors_rgb_diff, pca_dim_rgb,window_size)
+    #################################################   3-channels-diff (hsv)
+    
+    image1_hsv = color.rgb2hsv(image1)
+    image2_hsv = color.rgb2hsv(image2)
+    diff_image = cv2.absdiff(image1_hsv, image2_hsv)
+    
+    diff_image = np.pad(diff_image,((window_size // 2, window_size // 2), (window_size // 2, window_size // 2),(0,0)),
+            'constant')
+    
+    descriptors = []
+    for i in range(window_size):
+        for j in range(window_size):
+            descriptors += [diff_image[i:i+image1.shape[0],j:j+image1.shape[1],:].reshape((image1.shape[0],image1.shape[1],3))]
+    descriptors = np.concatenate(descriptors, axis = 2)
+    descriptors_hsv_diff = descriptors.reshape((descriptors.shape[0] * descriptors.shape[1], descriptors.shape[2]))
 
-    return descriptors_colored_diff
+    descriptors_colored_diff = descriptors_to_pca(descriptors_rgb_diff, pca_dim_rgb,window_size)
+    descriptors_hsv_diff = descriptors_to_pca(descriptors_hsv_diff, pca_dim_hsv,window_size)
+
+    descriptors = np.concatenate((descriptors_colored_diff, descriptors_hsv_diff), axis=1)
+
+    return descriptors
 
 
 #assumes descriptors is already flattened
@@ -66,8 +85,8 @@ def find_FVS(descriptors, EVS, mean_vec):
     return FVS
 
 #Creates the change map, according to a specified number of clusters and the other parameters
-def compute_change_map(image1, image2, window_size=5, clusters=16, pca_dim_rgb=9):
-    descriptors = get_descriptors(image1, image2, window_size, pca_dim_rgb)
+def compute_change_map(image1, image2, window_size=5, clusters=16, pca_dim_rgb=9, pca_dim_hsv=9):
+    descriptors = get_descriptors(image1, image2, window_size, pca_dim_rgb, pca_dim_hsv)
     # Now we are ready for clustering!
     change_map = Kmeansclustering(descriptors, clusters, image1.shape)
     mse_array, size_array = clustering_to_mse_values(change_map, image1, image2, clusters)

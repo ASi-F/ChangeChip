@@ -10,7 +10,7 @@ import os
 import argparse
 import bounding_box
 
-def main(output_dir, input_path, reference_path, n, use_first, window_size, pca_dim_rgb,
+def main(output_dir, input_path, reference_path, n, use_first, window_size, pca_dim_rgb, pca_dim_hsv,
          cut, lighting_fix, use_homography, resize_factor, save_extra_stuff, shade_boxes):
     '''
 
@@ -18,14 +18,16 @@ def main(output_dir, input_path, reference_path, n, use_first, window_size, pca_
     :param input_path: path to the input image
     :param reference_path: path to the reference image
     :param n: number of classes for clustering the diff descriptors
+    :param use_first: number of classes with the highest mse scores to be slassified as defective
     :param window_size: window size for the diff descriptors
     :param pca_dim_rgb: pca target dimension for the rgb diff descriptor
+    :param pca_dim_hsv: pca target dimension for the hsv diff descriptor
     :param cut: true to enable DXTR cropping
     :param lighting_fix: true to enable histogram matching
     :param use_homography: true to enable SIFT homography (always recommended)
     :param resize_factor: scale the input images, usually with factor smaller than 1 for faster results
     :param save_extra_stuff: save diagnostics and extra results, usually for debugging
-    :return: the results are saved in output_dir
+    :param shade_boxes: give bboxes of classes with hogher mse scores shades closer to red and with lesser score shades closer to blue
     '''
     global_variables.init(output_dir, save_extra_stuff) #setting global variables
 
@@ -97,7 +99,7 @@ def main(output_dir, input_path, reference_path, n, use_first, window_size, pca_
 
     start_time = time.time()
     clustering_map, mse_array, size_array = compute_change_map(image_1, image2_registered, window_size=window_size,
-                                                               clusters=n, pca_dim_rgb=pca_dim_rgb)
+                                                               clusters=n, pca_dim_rgb=pca_dim_rgb, pca_dim_hsv=pca_dim_hsv)
 
     clustering = [[] for _ in range(n)]
     for i in range(clustering_map.shape[0]):
@@ -162,6 +164,9 @@ if __name__ == '__main__':
     parser.add_argument('-pca_dim_rgb',
                         dest='pca_dim_rgb',
                         help='pca target dimension for the rgb diff descriptor')
+    parser.add_argument('-pca_dim_hsv',
+                        dest='pca_dim_hsv',
+                        help='pca target dimension for the hsv diff descriptor')
     parser.add_argument('-cut',
                         dest='cut',
                         help='true to enable DXTR cropping',
@@ -187,5 +192,5 @@ if __name__ == '__main__':
                         default=False, action='store_true')
     args = parser.parse_args()
     main(args.output_dir, args.input_path, args.reference_path, int(args.n),  int(args.use_first), int(args.window_size),
-         int(args.pca_dim_rgb), bool(args.cut), bool(args.lighting_fix), bool(args.use_homography),
+         int(args.pca_dim_rgb), int(args.pca_dim_hsv), bool(args.cut), bool(args.lighting_fix), bool(args.use_homography),
          float(args.resize_factor), bool(args.save_extra_stuff), bool(args.shade_boxes))
