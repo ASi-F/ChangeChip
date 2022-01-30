@@ -10,21 +10,7 @@ import cv2
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def get_descriptors (image1, image2, window_size, pca_dim_gray, pca_dim_rgb):
-
-    #################################################   grayscale-diff (abs)
-
-    diff_image = cv2.absdiff(image1, image2)
-    diff_image = color.rgb2gray(diff_image)
-    cv2.imwrite(global_variables.output_dir  + '/diff.jpg', diff_image)
-    diff_image = np.pad(diff_image,((window_size // 2, window_size // 2), (window_size // 2, window_size // 2)),
-            'constant')  # default is 0
-    descriptors = []
-    for i in range(window_size):
-        for j in range(window_size):
-            descriptors += [diff_image[i:i+image1.shape[0],j:j+image1.shape[1]].reshape((image1.shape[0],image1.shape[1],1))]
-    descriptors = np.concatenate(descriptors, axis = 2)
-    descriptors_gray_diff = descriptors.reshape((descriptors.shape[0] * descriptors.shape[1], descriptors.shape[2]))
+def get_descriptors (image1, image2, window_size, pca_dim_rgb):
 
     #################################################   3-channels-diff (abs)
     
@@ -43,14 +29,9 @@ def get_descriptors (image1, image2, window_size, pca_dim_gray, pca_dim_rgb):
     descriptors = np.concatenate(descriptors, axis = 2)
     descriptors_rgb_diff = descriptors.reshape((descriptors.shape[0] * descriptors.shape[1], descriptors.shape[2]))
 
-    #################################################   concatination
-
-    descriptors_gray_diff = descriptors_to_pca(descriptors_gray_diff, pca_dim_gray,window_size)
     descriptors_colored_diff = descriptors_to_pca(descriptors_rgb_diff, pca_dim_rgb,window_size)
 
-    descriptors = np.concatenate((descriptors_gray_diff, descriptors_colored_diff), axis=1)
-
-    return descriptors
+    return descriptors_colored_diff
 
 
 #assumes descriptors is already flattened
@@ -85,26 +66,11 @@ def find_FVS(descriptors, EVS, mean_vec):
     return FVS
 
 #Creates the change map, according to a specified number of clusters and the other parameters
-def compute_change_map(image1, image2, window_size=5, clusters=16, pca_dim_gray=3, pca_dim_rgb=9):
-    descriptors = get_descriptors(image1, image2, window_size, pca_dim_gray, pca_dim_rgb)
+def compute_change_map(image1, image2, window_size=5, clusters=16, pca_dim_rgb=9):
+    descriptors = get_descriptors(image1, image2, window_size, pca_dim_rgb)
     # Now we are ready for clustering!
     change_map = Kmeansclustering(descriptors, clusters, image1.shape)
     mse_array, size_array = clustering_to_mse_values(change_map, image1, image2, clusters)
-    sorted_indexes = np.argsort(mse_array)
-    colors_array = [plt.cm.jet(float(np.argwhere(sorted_indexes == class_))/(clusters-1)) for class_ in range(clusters)]
-    colored_change_map = np.zeros((change_map.shape[0], change_map.shape[1], 3), np.uint8)
-    palette_colored_change_map = np.zeros((change_map.shape[0], change_map.shape[1], 3), np.uint8)
-    palette = sns.color_palette("Paired", clusters)
-    for i in range(change_map.shape[0]):
-        for j in range(change_map.shape[1]):
-            colored_change_map[i, j]= (255*colors_array[change_map[i,j]][0],255*colors_array[change_map[i,j]][1],255*colors_array[change_map[i,j]][2])
-            palette_colored_change_map[i, j] = [255*palette[change_map[i, j]][0],255*palette[change_map[i, j]][1],255*palette[change_map[i, j]][2]]
-
-    if (global_variables.save_extra_stuff):
-        cv2.imwrite(global_variables.output_dir+ '/window_size_'+str(window_size)+'_pca_dim_gray'+str(pca_dim_gray)+'_pca_dim_rgb'
-               +str(pca_dim_rgb)+'_clusters_'+  str(clusters) + '.jpg', colored_change_map)
-        cv2.imwrite(global_variables.output_dir + '/PALETTE_window_size_' + str(window_size) + '_pca_dim_gray' + str(pca_dim_gray) + '_pca_dim_rgb'
-               + str(pca_dim_rgb) + '_clusters_' + str(clusters) + '.jpg', palette_colored_change_map)
 
     #Saving Output for later evaluation
     savetxt(global_variables.output_dir+ '/clustering_data.csv', change_map, delimiter=',')
@@ -178,13 +144,12 @@ def find_groups(MSE_array, size_array, n, problem_size):
 #this selection is done by an MSE heuristic using DBSCAN clustering, to seperate the highest mse-valued classes from the others.
 #the eps density parameter of DBSCAN might differ from system to system
 def find_group_of_accepted_classes_DBSCAN(MSE_array):
-    print(MSE_array)
     clustering = DBSCAN(eps=0.02, min_samples=1).fit(np.array(MSE_array).reshape(-1,1))
     number_of_clusters = len(set(clustering.labels_))
     if number_of_clusters == 1:
         print("No significant changes are detected.")
         exit(0)
-    #print(clustering.labels_)
+
     classes = [[] for i in range(number_of_clusters)]
     centers = [0 for i in range(number_of_clusters)]
     for i in range(len(MSE_array)):
@@ -206,10 +171,6 @@ def find_group_of_accepted_classes_DBSCAN(MSE_array):
     plt.scatter(accepted_classes[:], np.array(MSE_array)[np.array(accepted_classes)], c="blue")
     plt.title('K Mean Classification')
     plt.savefig(global_variables.output_dir+"/mse.png")
-
-    #save output for later evaluation
-    savetxt(global_variables.output_dir + '/accepted_classes.csv', accepted_classes, delimiter=',')
-    return [accepted_classes]
 
     #save output for later evaluation
     savetxt(global_variables.output_dir + '/accepted_classes.csv', accepted_classes, delimiter=',')

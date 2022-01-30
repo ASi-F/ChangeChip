@@ -10,8 +10,8 @@ import os
 import argparse
 import bounding_box
 
-def main(output_dir,input_path,reference_path,n,window_size, pca_dim_gray, pca_dim_rgb,
-         cut, lighting_fix, use_homography, resize_factor, save_extra_stuff):
+def main(output_dir, input_path, reference_path, n, use_first, window_size, pca_dim_rgb,
+         cut, lighting_fix, use_homography, resize_factor, save_extra_stuff, shade_boxes):
     '''
 
     :param output_dir: destination directory for the output
@@ -19,7 +19,6 @@ def main(output_dir,input_path,reference_path,n,window_size, pca_dim_gray, pca_d
     :param reference_path: path to the reference image
     :param n: number of classes for clustering the diff descriptors
     :param window_size: window size for the diff descriptors
-    :param pca_dim_gray: pca target dimension for the gray diff descriptor
     :param pca_dim_rgb: pca target dimension for the rgb diff descriptor
     :param cut: true to enable DXTR cropping
     :param lighting_fix: true to enable histogram matching
@@ -98,7 +97,7 @@ def main(output_dir,input_path,reference_path,n,window_size, pca_dim_gray, pca_d
 
     start_time = time.time()
     clustering_map, mse_array, size_array = compute_change_map(image_1, image2_registered, window_size=window_size,
-                                                               clusters=n, pca_dim_gray= pca_dim_gray, pca_dim_rgb=pca_dim_rgb)
+                                                               clusters=n, pca_dim_rgb=pca_dim_rgb)
 
     clustering = [[] for _ in range(n)]
     for i in range(clustering_map.shape[0]):
@@ -110,13 +109,26 @@ def main(output_dir,input_path,reference_path,n,window_size, pca_dim_gray, pca_d
     b_channel, g_channel, r_channel = cv2.split(input_image)
     alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * 255
     alpha_channel[:, :] = 50
-    groups = find_group_of_accepted_classes_DBSCAN(mse_array)
+    if use_first == -1:
+        groups = find_group_of_accepted_classes_DBSCAN(mse_array)
+    else:
+        npmse = np.array(mse_array)
+        groups = [npmse.argsort()[-use_first:][::-1]]
     print('MSE Array',mse_array)
     print('groups',groups)
-    bounding_boxes = bounding_box.create_clusters(clustering_map,groups[0])
     img = input_image.copy()
-    for box in bounding_boxes:
-        img = cv2.rectangle(img, (max(box[0]-2,0),max(box[1]-2,0)), (min(box[2]+2,img.shape[1]-1),min(box[3]+2,img.shape[0]+2)), (0,0,255),1)
+    if not shade_boxes:
+        bounding_boxes = bounding_box.create_clusters(clustering_map,groups[0])
+        for box in bounding_boxes:
+            img = cv2.rectangle(img, (max(box[0]-2,0),max(box[1]-2,0)), (min(box[2]+2,img.shape[1]-1),min(box[3]+2,img.shape[0]+2)), (0,0,255),1)
+    else:
+        x = len(groups[0])
+        box_colors = [(0,0,255)] if x == 1 else [(255-i*255//(x-1),0,i*255//(x-1)) for i in range(x)]
+        for i,group in enumerate(groups[0]):
+            bounding_boxes = bounding_box.create_clusters(clustering_map,[group])
+            for box in bounding_boxes:
+                img = cv2.rectangle(img, (max(box[0]-2,0),max(box[1]-2,0)), (min(box[2]+2,img.shape[1]-1),min(box[3]+2,img.shape[0]+2)), box_colors[i],1)
+
     cv2.imwrite(global_variables.output_dir + '/MARKED_DEFECTS'+'.png', img)
 
     for group in groups:
@@ -141,18 +153,15 @@ if __name__ == '__main__':
     parser.add_argument('-n',
                         dest='n',
                         help='number of classes for clustering the diff descriptors')
+    parser.add_argument('-use_first',
+                        dest='use_first',
+                        default = -1, help='number of classes with the highest mse scores to be slassified as defective')
     parser.add_argument('-window_size',
                         dest='window_size',
                         help='window size for the diff descriptors')
-    parser.add_argument('-pca_dim_gray',
-                        dest='pca_dim_gray',
-                        help='pca target dimension for the gray diff descriptor')
     parser.add_argument('-pca_dim_rgb',
                         dest='pca_dim_rgb',
                         help='pca target dimension for the rgb diff descriptor')
-    parser.add_argument('-pca_target_dim',
-                        dest='pca_target_dim',
-                        help='pca target dimension for final combination of the descriptors')
     parser.add_argument('-cut',
                         dest='cut',
                         help='true to enable DXTR cropping',
@@ -172,7 +181,11 @@ if __name__ == '__main__':
                         dest='save_extra_stuff',
                         help='save diagnostics and extra results, usually for debugging',
                         default=False, action='store_true')
+    parser.add_argument('-shade_boxes',
+                        dest='shade_boxes',
+                        help='true to colour boxes of different classes with different colors',
+                        default=False, action='store_true')
     args = parser.parse_args()
-    main(args.output_dir, args.input_path, args.reference_path, int(args.n), int(args.window_size),
-         int(args.pca_dim_gray), int(args.pca_dim_rgb), bool(args.cut), bool(args.lighting_fix), bool(args.use_homography),
-         float(args.resize_factor), bool(args.save_extra_stuff))
+    main(args.output_dir, args.input_path, args.reference_path, int(args.n),  int(args.use_first), int(args.window_size),
+         int(args.pca_dim_rgb), bool(args.cut), bool(args.lighting_fix), bool(args.use_homography),
+         float(args.resize_factor), bool(args.save_extra_stuff), bool(args.shade_boxes))
