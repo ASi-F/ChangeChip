@@ -9,7 +9,7 @@ from keras.layers import Layer
 
 from DEXTR.networks import resnet
 import keras.backend as K
-from keras.backend import tf as ktf
+from keras.backend.tensorflow_backend import tf as ktf
 
 class Upsampling(Layer):
 
@@ -22,8 +22,7 @@ class Upsampling(Layer):
 
     def call(self, inputs, **kwargs):
         new_height, new_width = self.new_size
-        resized = ktf.image.resize_images(inputs, [new_height, new_width],
-                                          align_corners=True)
+        resized = ktf.image.resize(inputs, [new_height, new_width],)
         return resized
 
     def compute_output_shape(self, input_shape):

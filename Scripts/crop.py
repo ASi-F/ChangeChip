@@ -2,14 +2,15 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import global_variables
-from keras import backend as K
+from tensorflow.python.keras import backend as K
 import tensorflow as tf
 from DEXTR.helpers import helpers as helpers
 from DEXTR.networks.dextr import DEXTR
 import cv2
-
+# import tensorflow.compat.v1 as tf
+# tf.disable_v2_behavior()
 def crop_images(image_1, image_2):
-    scale = 0.2
+    scale = 1
     image_1_small = cv2.resize(image_1, (0,0), fx=scale, fy=scale , interpolation=cv2.INTER_AREA)
     image_2_small = cv2.resize(image_2, (0,0), fx=scale, fy=scale , interpolation=cv2.INTER_AREA)
     modelName = 'dextr_pascal-sbd'
@@ -17,7 +18,7 @@ def crop_images(image_1, image_2):
     thres = 0.8
 
     # Handle input and output args
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     K.set_session(sess)
 
     with sess.as_default():

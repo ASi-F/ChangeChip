@@ -64,9 +64,16 @@ def main(output_dir,input_path,reference_path,n,window_size, pca_dim_gray, pca_d
         min_height = min(image_1.shape[:2][1], image_2.shape[:2][1])
         for i in range(min_width):
             for j in range(min_height):
-                if mask_registered[i][j][0] == 0 or result_1[i][j] == False:
+                if result_1[i][j] == False:
                     image2_registered[i][j] = 0
                     image_1[i][j] = 0
+        if use_homography:
+            for i in range(min_width):
+                for j in range(min_height):
+                        if mask_registered[i][j][0] == 0:
+                            image2_registered[i][j] = 0
+                            image_1[i][j] = 0
+
         cv2.imwrite(global_variables.output_dir + '/blanked_1.jpg', image_1)
         cv2.imwrite(global_variables.output_dir + '/blanked_2.jpg', image2_registered)
     else:
@@ -104,11 +111,12 @@ def main(output_dir,input_path,reference_path,n,window_size, pca_dim_gray, pca_d
     alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * 255
     alpha_channel[:, :] = 50
     groups = find_group_of_accepted_classes_DBSCAN(mse_array)
-    
+    print('MSE Array',mse_array)
+    print('groups',groups)
     bounding_boxes = bounding_box.create_clusters(clustering_map,groups[0])
     img = input_image.copy()
     for box in bounding_boxes:
-        img = cv2.rectangle(img, (max(box[0]-2,0),max(box[1]-2,0)), (min(box[2]+2,img.shape[1]-1),min(box[3]+2,img.shape[0]+2)), (0,0,255),2)
+        img = cv2.rectangle(img, (max(box[0]-2,0),max(box[1]-2,0)), (min(box[2]+2,img.shape[1]-1),min(box[3]+2,img.shape[0]+2)), (0,0,255),1)
     cv2.imwrite(global_variables.output_dir + '/MARKED_DEFECTS'+'.png', img)
 
     for group in groups:

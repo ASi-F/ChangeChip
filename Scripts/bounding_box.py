@@ -83,5 +83,6 @@ def create_clusters(clusters, classes):
         ymin = y
       if y>ymax:
         ymax = y
-    bboxes += [[xmin, ymin, xmax, ymax]]
+    if xmin!=xmax and ymin!=ymax:
+      bboxes += [[xmin, ymin, xmax, ymax]]
   return bboxes

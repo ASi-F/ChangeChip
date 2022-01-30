@@ -25,7 +25,8 @@ class DEXTR(object):
             self.set_npy_weights(weights)
         else:
             print("Loading weights from H5 file.")
-            h5_path = join(Path.models_dir(), weights + '.h5')
+            print()
+            h5_path = join('Scripts', Path.models_dir(), weights + '.h5')
             self.model.load_weights(h5_path)
 
     def predict(self, img):
