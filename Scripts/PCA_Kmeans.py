@@ -138,7 +138,7 @@ def find_groups(MSE_array, size_array, n, problem_size):
     savetxt(global_variables.output_dir + '/mse_filtered_sorted.csv', MSE_filtered_sorted, delimiter=',')
     savetxt(global_variables.output_dir + '/classes_filtered_sorted.csv', number_class_filtered_sorted, delimiter=',')
 
-    print(MSE_filtered_sorted[::-1]) #decreasing MSE values
+    #print(MSE_filtered_sorted[::-1]) #decreasing MSE values
     plt.scatter([i for i in range(len(MSE_filtered_sorted))], MSE_filtered_sorted[::-1] , c='red')
     plt.savefig(global_variables.output_dir+"/mse.png")
 
@@ -185,8 +185,8 @@ def find_group_of_accepted_classes_DBSCAN(MSE_array):
     plt.xlabel('Index')
     plt.ylabel('MSE')
     plt.scatter(range(len(MSE_array)), MSE_array, c="red")
-    print(accepted_classes)
-    print(np.array(MSE_array)[np.array(accepted_classes)])
+    #print(accepted_classes)
+    #print(np.array(MSE_array)[np.array(accepted_classes)])
     plt.scatter(accepted_classes[:], np.array(MSE_array)[np.array(accepted_classes)], c="blue")
     plt.title('K Mean Classification')
     plt.savefig(global_variables.output_dir+"/mse.png")

@@ -116,8 +116,8 @@ def main(output_dir, input_path, reference_path, n, use_first, window_size, pca_
     else:
         npmse = np.array(mse_array)
         groups = [npmse.argsort()[-use_first:][::-1]]
-    print('MSE Array',mse_array)
-    print('groups',groups)
+    print('MSE Array - ',mse_array)
+    print('groups - ',groups)
     img = input_image.copy()
     if not shade_boxes:
         bounding_boxes = bounding_box.create_clusters(clustering_map,groups[0])
