@@ -93,7 +93,7 @@ def main(output_dir, input_path, reference_path, n, use_first, window_size, pca_
     if (lighting_fix):
         #Using the histogram matching, only image2_registered is changed
         image2_registered = light_diff_elimination(image_1, image2_registered)
-
+        cv2.imwrite(global_variables.output_dir + '/image2_registered.jpg', image2_registered)
         print("--- Preprocessing time - %s seconds ---" % (time.time() - start_time))
 
 

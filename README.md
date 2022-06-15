@@ -47,3 +47,4 @@ python Scripts/main.py -output_dir Example/Output
 -save_extra_stuff
 ```
 You can either run ```./run_exmaple.sh```.
+python Scripts/main.py -output_dir Example/Output -input_path Example/INPUT_IMAGE.JPG -reference_path Example/REFERENCE_IMAGE.JPG -n 16 -window_size 5 -pca_dim_rgb 9 -resize_factor 1 -lighting_fix -use_homography -save_extra_stuff
