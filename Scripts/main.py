@@ -6,6 +6,7 @@ import cv2
 import time
 from PCA_Kmeans import compute_change_map, find_group_of_accepted_classes_DBSCAN, draw_combination_on_transparent_input_image
 import global_variables
+from ssim import *
 import os
 import argparse
 import bounding_box
@@ -98,45 +99,58 @@ def main(output_dir, input_path, reference_path, n, use_first, window_size, pca_
 
 
     start_time = time.time()
-    clustering_map, mse_array, size_array = compute_change_map(image_1, image2_registered, window_size=window_size,
-                                                               clusters=n, pca_dim_rgb=pca_dim_rgb, pca_dim_hsv=pca_dim_hsv)
 
-    clustering = [[] for _ in range(n)]
-    for i in range(clustering_map.shape[0]):
-        for j in range(clustering_map.shape[1]):
-            clustering[int(clustering_map[i,j])].append([i,j])
+    window = create_window(21, 3)
+    _img1 = tensorify(image_1)
+    _img2 = tensorify(image2_registered)
+    ret, ssim_score = ssim(_img1, _img2, val_range=255, window = window)
+    score = ssim_score.numpy()
+    score = score[0]
+    score = score.transpose([1,2,0])
 
-    input_image = cv2.imread(input_path)
-    input_image = cv2.resize(input_image,new_shape, interpolation=cv2.INTER_AREA)
-    b_channel, g_channel, r_channel = cv2.split(input_image)
-    alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * 255
-    alpha_channel[:, :] = 50
-    if use_first == -1:
-        groups = find_group_of_accepted_classes_DBSCAN(mse_array)
-    else:
-        npmse = np.array(mse_array)
-        groups = [npmse.argsort()[-use_first:][::-1]]
-    print('MSE Array - ',mse_array)
-    print('groups - ',groups)
-    img = input_image.copy()
-    if not shade_boxes:
-        bounding_boxes = bounding_box.create_clusters(clustering_map,groups[0])
-        for box in bounding_boxes:
-            img = cv2.rectangle(img, (max(box[0]-2,0),max(box[1]-2,0)), (min(box[2]+2,img.shape[1]-1),min(box[3]+2,img.shape[0]+2)), (0,0,255),1)
-    else:
-        x = len(groups[0])
-        box_colors = [(0,0,255)] if x == 1 else [(255-i*255//(x-1),0,i*255//(x-1)) for i in range(x)]
-        for i,group in enumerate(groups[0]):
-            bounding_boxes = bounding_box.create_clusters(clustering_map,[group])
-            for box in bounding_boxes:
-                img = cv2.rectangle(img, (max(box[0]-2,0),max(box[1]-2,0)), (min(box[2]+2,img.shape[1]-1),min(box[3]+2,img.shape[0]+2)), box_colors[i],1)
+    img = (255*(1+score)/2).astype(np.uint8)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(gray, 140, 255, type = cv2.THRESH_BINARY_INV)
 
-    cv2.imwrite(global_variables.output_dir + '/MARKED_DEFECTS'+'.png', img)
+    # # clustering_map, mse_array, size_array = compute_change_map(image_1, image2_registered, window_size=window_size,
+    # #                                                            clusters=n, pca_dim_rgb=pca_dim_rgb, pca_dim_hsv=pca_dim_hsv)
 
-    for group in groups:
-        transparent_input_image = cv2.merge((b_channel, g_channel, r_channel, alpha_channel))
-        result = draw_combination_on_transparent_input_image(mse_array, clustering, group, transparent_input_image)
-        cv2.imwrite(global_variables.output_dir + '/ACCEPTED_CLASSES'+'.png', result)
+    # clustering = [[] for _ in range(n)]
+    # for i in range(clustering_map.shape[0]):
+    #     for j in range(clustering_map.shape[1]):
+    #         clustering[int(clustering_map[i,j])].append([i,j])
+
+    # input_image = cv2.imread(input_path)
+    # input_image = cv2.resize(input_image,new_shape, interpolation=cv2.INTER_AREA)
+    # b_channel, g_channel, r_channel = cv2.split(input_image)
+    # alpha_channel = np.ones(b_channel.shape, dtype=b_channel.dtype) * 255
+    # alpha_channel[:, :] = 50
+    # if use_first == -1:
+    #     groups = find_group_of_accepted_classes_DBSCAN(mse_array)
+    # else:
+    #     npmse = np.array(mse_array)
+    #     groups = [npmse.argsort()[-use_first:][::-1]]
+    # print('MSE Array - ',mse_array)
+    # print('groups - ',groups)
+    # img = input_image.copy()
+    # if not shade_boxes:
+    #     bounding_boxes = bounding_box.create_clusters(clustering_map,groups[0])
+    #     for box in bounding_boxes:
+    #         img = cv2.rectangle(img, (max(box[0]-2,0),max(box[1]-2,0)), (min(box[2]+2,img.shape[1]-1),min(box[3]+2,img.shape[0]+2)), (0,0,255),1)
+    # else:
+    #     x = len(groups[0])
+    #     box_colors = [(0,0,255)] if x == 1 else [(255-i*255//(x-1),0,i*255//(x-1)) for i in range(x)]
+    #     for i,group in enumerate(groups[0]):
+    #         bounding_boxes = bounding_box.create_clusters(clustering_map,[group])
+    #         for box in bounding_boxes:
+    #             img = cv2.rectangle(img, (max(box[0]-2,0),max(box[1]-2,0)), (min(box[2]+2,img.shape[1]-1),min(box[3]+2,img.shape[0]+2)), box_colors[i],1)
+
+    cv2.imwrite(global_variables.output_dir + '/MARKED_DEFECTS'+'.png', thresh)
+
+    # for group in groups:
+    #     transparent_input_image = cv2.merge((b_channel, g_channel, r_channel, alpha_channel))
+    #     result = draw_combination_on_transparent_input_image(mse_array, clustering, group, transparent_input_image)
+    #     cv2.imwrite(global_variables.output_dir + '/ACCEPTED_CLASSES'+'.png', result)
 
     print("--- PCA-Kmeans + Post-processing time - %s seconds ---" % (time.time() - start_time))
 
